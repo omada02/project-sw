@@ -1,12 +1,13 @@
-package com.smarttracking.valid_soft;
+package it.univr.smarttracking;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootApplication
-public class SmartTrackingApplication {
+@SpringBootTest
+class SmarttrackingApplicationTests {
 
-    public static void main(String[] args) {
-        SpringApplication.run(SmartTrackingApplication.class, args);
-    }
+	@Test
+	void contextLoads() {
+	}
+
 }
