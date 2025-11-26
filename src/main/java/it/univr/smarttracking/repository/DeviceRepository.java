@@ -1,11 +1,14 @@
-package com.smarttracking.valid_soft.repository;
+package it.univr.smarttracking.repository;
 
-import com.smarttracking.valid_soft.entity.Device;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
-@Repository
+import it.univr.smarttracking.model.Device;
+
 public interface DeviceRepository extends JpaRepository<Device, Long> {
-    // Rimuovi il metodo findAll() - è già ereditato da JpaRepository!
-    // Spring fornisce automaticamente: save(), findAll(), findById(), delete(), etc.
+    Optional<Device> findByDeviceId(String deviceId);
+    List<Device> findByOwnerId(Long ownerId);
+    List<Device> findAll();
 }
