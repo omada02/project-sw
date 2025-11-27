@@ -1,29 +1,46 @@
 package it.univr.smarttracking.service;
 
 import it.univr.smarttracking.model.User;
+import it.univr.smarttracking.model.UserRole;
 import it.univr.smarttracking.repository.UserRepository;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    public User findByUsername(String username) {
-        Optional<User> user = userRepository.findByUsername(username);
-        return user.orElseThrow(() -> new RuntimeException("Utente non trovato"));
-    }
-
+    // 🔹 Metodo richiesto dal DeviceController
     public User findByEmail(String email) {
-        Optional<User> user = userRepository.findByEmail(email);
-        return user.orElseThrow(() -> new RuntimeException("Utente non trovato"));
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utente non trovato"));
+    }
+
+    public User registerUser(String email, String firstName, String lastName, String rawPassword) {
+
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new RuntimeException("Email già registrata");
+        }
+
+        User user = new User();
+        user.setEmail(email);
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setPassword(passwordEncoder.encode(rawPassword));
+        user.setRole(UserRole.USER);
+        user.setEnabled(true);
+
+        return userRepository.save(user);
     }
 
     public List<User> findAllUsers() {

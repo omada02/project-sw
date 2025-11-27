@@ -7,8 +7,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import it.univr.smarttracking.model.User;
 
 public interface UserRepository extends JpaRepository<User, Long> {
-    Optional<User> findByUsername(String username);
+
+    // Login e ricerca utente tramite email
     Optional<User> findByEmail(String email);
-    boolean existsByUsername(String username);
+
+    // Controllo duplicati
     boolean existsByEmail(String email);
 }

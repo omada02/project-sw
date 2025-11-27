@@ -21,13 +21,19 @@ public class SecurityConfig {
         http
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/", "/health", "/login", "/register", "/css/**", "/js/**","/images/**").permitAll()
-                .requestMatchers("/admin/**").hasAuthority("ADMIN") // Solo ADMIN può accedere
-                .requestMatchers("/devices/**").authenticated() // Autenticazione richiesta
+                
+                // ⬇⬇ CORRETTO: gli admin devono avere ROLE_ADMIN
+                .requestMatchers("/admin/**").hasRole("ADMIN")
+
+                // Tutti gli utenti autenticati possono vedere i devices
+                .requestMatchers("/devices/**").authenticated()
+
+                // Tutto il resto richiede autenticazione
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
                 .loginPage("/login")
-                .defaultSuccessUrl("/dashboard")
+                .defaultSuccessUrl("/dashboard", true)
                 .permitAll()
             )
             .logout(logout -> logout

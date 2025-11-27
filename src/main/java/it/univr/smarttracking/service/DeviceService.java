@@ -1,66 +1,75 @@
 package it.univr.smarttracking.service;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.Base64;
-import java.util.List;
-import java.util.UUID;
-
-import org.springframework.stereotype.Service;
-
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.WriterException;
-import com.google.zxing.client.j2se.MatrixToImageWriter;
-import com.google.zxing.common.BitMatrix;
-import com.google.zxing.qrcode.QRCodeWriter;
-
 import it.univr.smarttracking.model.Device;
+import it.univr.smarttracking.model.Device.DeviceStatus;
 import it.univr.smarttracking.model.User;
 import it.univr.smarttracking.repository.DeviceRepository;
 
+import org.springframework.stereotype.Service;
+
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.Base64;
+import java.util.List;
+import java.util.Optional;
+
 @Service
 public class DeviceService {
-    
+
     private final DeviceRepository deviceRepository;
 
     public DeviceService(DeviceRepository deviceRepository) {
         this.deviceRepository = deviceRepository;
     }
 
-    public Device provisionNewDevice(User owner) {
-        Device device = new Device();
-        device.setDeviceId(UUID.randomUUID().toString());
-        device.setDeviceSecret(UUID.randomUUID().toString());
-        device.setOwner(owner);
-        device.setStatus(Device.DeviceStatus.PROVISIONED);
+    // Genera un secret sicuro
+    private String generateSecret() {
+        byte[] bytes = new byte[32];
+        new SecureRandom().nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
 
-        // Genera QR Code
-        String qrData = "SMARTTRACKING:" + device.getDeviceId() + ":" + device.getDeviceSecret();
-        String qrCodeBase64 = generateQRCode(qrData);
-        device.setQrCodeData(qrCodeBase64);
+    // Genera un deviceId univoco
+    private String generateDeviceId() {
+        return "DEV-" + System.currentTimeMillis();
+    }
+
+    // Crea un nuovo device e assegna un QR code
+    public Device createDevice(User owner) {
+        Device device = new Device();
+
+        device.setDeviceId(generateDeviceId());
+        device.setDeviceSecret(generateSecret());
+        device.setOwner(owner);
+        device.setStatus(DeviceStatus.INACTIVE);
+        device.setCreatedAt(LocalDateTime.now());
+
+        // Dati QR: es. "DEVICEID|SECRET"
+        String qrData = device.getDeviceId() + "|" + device.getDeviceSecret();
+        device.setQrCodeData(qrData);
 
         return deviceRepository.save(device);
     }
 
-    private String generateQRCode(String text) {
-        try {
-            QRCodeWriter qrCodeWriter = new QRCodeWriter();
-            BitMatrix bitMatrix = qrCodeWriter.encode(text, BarcodeFormat.QR_CODE, 250, 250);
-            
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            MatrixToImageWriter.writeToStream(bitMatrix, "PNG", outputStream);
-            
-            return Base64.getEncoder().encodeToString(outputStream.toByteArray());
-        } catch (WriterException | IOException e) {
-            throw new RuntimeException("Errore nella generazione del QR Code", e);
-        }
+    // Lista device per utente
+    public List<Device> getDevicesByUser(User owner) {
+        return deviceRepository.findByOwner(owner);
     }
 
-    public List<Device> getDevicesByUser(User user) {
-        return deviceRepository.findByOwnerId(user.getId());
-    }
-
+    // Lista device per admin
     public List<Device> getAllDevices() {
         return deviceRepository.findAll();
+    }
+
+    // Provisioning - attiva il device
+    public Device provisionDevice(String deviceId, User owner) {
+        Device device = deviceRepository.findByDeviceId(deviceId)
+                .orElseThrow(() -> new RuntimeException("Device non trovato"));
+
+        device.setOwner(owner);
+        device.setStatus(DeviceStatus.PROVISIONED);
+        device.setLastProvisionedAt(LocalDateTime.now());
+
+        return deviceRepository.save(device);
     }
 }
